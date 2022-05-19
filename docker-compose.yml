@@ -1,0 +1,47 @@
+version: '3.9'
+
+services:
+  db:
+    container_name: image_db
+    image: mysql:latest
+    volumes:
+      - postgres_volume:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - 3306:3306
+
+  redis:
+    container_name: redis
+    image: redis:6-alpine
+    volumes:
+      - redis_volume:/data
+    ports:
+      - 6379:6379
+
+  app:
+    dockerfile: ./Dockerfile
+    container_name: image_app
+    restart: always
+    depends_on:
+      - db
+      - redis
+    build:
+      context: .
+      target: dependencies
+    ports:
+      - 1337:1337
+      - 9229:9229
+    env_file:
+      - .env
+    environment:
+      - PG_HOST=mysql
+      - REDIS_HOST=redis
+    volumes:
+      - ./:/home/node/app
+    command: dumb-init node ace serve --watch --node-args="--inspect=0.0.0.0"
+
+volumes:
+  postgres_volume:
+  redis_volume:
